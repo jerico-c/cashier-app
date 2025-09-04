@@ -4,7 +4,7 @@ CashierPro Lite is a clean, simple, and modern point-of-sale (POS) application d
 
 Built with vanilla HTML, JavaScript, and styled with Tailwind CSS, this application is lightweight, easy to understand, and highly customizable.
 
-![CashierPro Lite Screenshot](https://i.imgur.com/G5c86tK.png)
+
 
 ## ✨ Features
 
