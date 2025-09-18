@@ -20,6 +20,11 @@
         .quantity-btn {
             transition: background-color 0.2s ease-in-out;
         }
+        .category-btn.active {
+            background-color: #4f46e5; /* indigo-600 */
+            color: white;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
     </style>
 </head>
 <body class="bg-gray-100 text-gray-800">
@@ -34,7 +39,12 @@
 
             <!-- Products Section -->
             <section class="lg:col-span-2">
-                <h2 class="text-2xl font-semibold mb-4 border-b pb-2">Available Products</h2>
+                <div class="flex flex-wrap items-center justify-between mb-4 border-b pb-2">
+                    <h2 class="text-2xl font-semibold">Available Products</h2>
+                    <div id="category-filters" class="flex flex-wrap gap-2 mt-2 sm:mt-0">
+                        <!-- Category buttons will be injected here -->
+                    </div>
+                </div>
                 <div id="product-list" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
                     <!-- Product items will be injected here by JavaScript -->
                 </div>
@@ -78,17 +88,18 @@
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             const products = [
-                { id: 1, name: 'Espresso', price: 22000 },
-                { id: 2, name: 'Latte', price: 28000 },
-                { id: 3, name: 'Cappuccino', price: 28000 },
-                { id: 4, name: 'Americano', price: 25000 },
-                { id: 5, name: 'Croissant', price: 18000 },
-                { id: 6, name: 'Muffin', price: 20000 },
-                { id: 7, name: 'Mineral Water', price: 10000 },
-                { id: 8, name: 'Iced Tea', price: 15000 },
+                { id: 1, name: 'Espresso', price: 22000, category: 'Hot Drinks' },
+                { id: 2, name: 'Latte', price: 28000, category: 'Hot Drinks' },
+                { id: 3, name: 'Cappuccino', price: 28000, category: 'Hot Drinks' },
+                { id: 4, name: 'Americano', price: 25000, category: 'Hot Drinks' },
+                { id: 5, name: 'Croissant', price: 18000, category: 'Pastries' },
+                { id: 6, name: 'Muffin', price: 20000, category: 'Pastries' },
+                { id: 7, name: 'Mineral Water', price: 10000, category: 'Cold Drinks' },
+                { id: 8, name: 'Iced Tea', price: 15000, category: 'Cold Drinks' },
             ];
 
             let cart = [];
+            let activeCategory = 'All';
 
             const productList = document.getElementById('product-list');
             const cartItemsContainer = document.getElementById('cart-items');
@@ -97,6 +108,7 @@
             const emptyCartMessage = document.getElementById('empty-cart-message');
             const successModal = document.getElementById('success-modal');
             const closeModalButton = document.getElementById('close-modal-button');
+            const categoryFiltersContainer = document.getElementById('category-filters');
 
             /**
              * Formats a number into Indonesian Rupiah currency format.
@@ -111,13 +123,39 @@
                     maximumFractionDigits: 0
                 }).format(number);
             };
+            
+            /**
+             * Renders the category filter buttons.
+             */
+            const renderCategories = () => {
+                const categories = ['All', ...new Set(products.map(p => p.category))];
+                categoryFiltersContainer.innerHTML = '';
+                categories.forEach(category => {
+                    const button = document.createElement('button');
+                    button.textContent = category;
+                    button.className = `category-btn px-4 py-2 rounded-lg font-medium transition-colors duration-200 bg-white shadow-sm hover:bg-gray-200`;
+                    if (category === activeCategory) {
+                        button.classList.add('active');
+                    }
+                    button.addEventListener('click', () => {
+                        activeCategory = category;
+                        renderProducts();
+                        renderCategories();
+                    });
+                    categoryFiltersContainer.appendChild(button);
+                });
+            };
 
             /**
-             * Renders the list of available products.
+             * Renders the list of available products based on the active category.
              */
             const renderProducts = () => {
                 productList.innerHTML = '';
-                products.forEach(product => {
+                const filteredProducts = activeCategory === 'All' 
+                    ? products 
+                    : products.filter(p => p.category === activeCategory);
+
+                filteredProducts.forEach(product => {
                     const productElement = document.createElement('div');
                     productElement.className = 'product-card bg-white p-4 rounded-lg shadow-md cursor-pointer flex flex-col justify-between';
                     productElement.innerHTML = `
@@ -234,6 +272,7 @@
             });
 
             // Initial render
+            renderCategories();
             renderProducts();
             renderCart();
         });
