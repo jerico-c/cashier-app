@@ -83,6 +83,3 @@ This application was built as a solid foundation. Here are some features that co
 * **Vanilla JavaScript (ES6)**
 * **Tailwind CSS** (via CDN for simplicity)
 
-## 📄 License
-
-This project is open-source and available under the [MIT License](LICENSE).
