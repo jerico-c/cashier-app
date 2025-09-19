@@ -39,10 +39,18 @@
 
             <!-- Products Section -->
             <section class="lg:col-span-2">
-                <div class="flex flex-wrap items-center justify-between mb-4 border-b pb-2">
-                    <h2 class="text-2xl font-semibold">Available Products</h2>
-                    <div id="category-filters" class="flex flex-wrap gap-2 mt-2 sm:mt-0">
-                        <!-- Category buttons will be injected here -->
+                <div class="mb-4 border-b pb-4">
+                    <div class="flex flex-wrap items-center justify-between mb-4">
+                        <h2 class="text-2xl font-semibold">Available Products</h2>
+                        <div id="category-filters" class="flex flex-wrap gap-2 mt-2 sm:mt-0">
+                            <!-- Category buttons will be injected here -->
+                        </div>
+                    </div>
+                     <div class="relative">
+                        <input type="text" id="search-bar" placeholder="Search for products..." class="w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        <svg class="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                           <path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd" />
+                        </svg>
                     </div>
                 </div>
                 <div id="product-list" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
@@ -100,6 +108,7 @@
 
             let cart = [];
             let activeCategory = 'All';
+            let searchQuery = '';
 
             const productList = document.getElementById('product-list');
             const cartItemsContainer = document.getElementById('cart-items');
@@ -109,11 +118,10 @@
             const successModal = document.getElementById('success-modal');
             const closeModalButton = document.getElementById('close-modal-button');
             const categoryFiltersContainer = document.getElementById('category-filters');
+            const searchBar = document.getElementById('search-bar');
 
             /**
              * Formats a number into Indonesian Rupiah currency format.
-             * @param {number} number - The number to format.
-             * @returns {string} The formatted currency string.
              */
             const formatCurrency = (number) => {
                 return new Intl.NumberFormat('id-ID', {
@@ -147,13 +155,25 @@
             };
 
             /**
-             * Renders the list of available products based on the active category.
+             * Renders the list of available products based on active category and search query.
              */
             const renderProducts = () => {
                 productList.innerHTML = '';
-                const filteredProducts = activeCategory === 'All' 
+                
+                let filteredProducts = activeCategory === 'All' 
                     ? products 
                     : products.filter(p => p.category === activeCategory);
+
+                if (searchQuery) {
+                    filteredProducts = filteredProducts.filter(p => 
+                        p.name.toLowerCase().includes(searchQuery)
+                    );
+                }
+
+                if (filteredProducts.length === 0) {
+                    productList.innerHTML = `<p class="col-span-full text-center text-gray-500 py-8">No products found matching your criteria.</p>`;
+                    return;
+                }
 
                 filteredProducts.forEach(product => {
                     const productElement = document.createElement('div');
@@ -169,7 +189,6 @@
 
             /**
              * Adds a product to the cart or increments its quantity.
-             * @param {object} product - The product object to add.
              */
             const addToCart = (product) => {
                 const existingItem = cart.find(item => item.id === product.id);
@@ -183,8 +202,6 @@
             
             /**
              * Handles changes to item quantity in the cart.
-             * @param {number} productId - The ID of the product to update.
-             * @param {string} action - The action to perform ('increment' or 'decrement').
              */
             const handleQuantityChange = (productId, action) => {
                 const itemIndex = cart.findIndex(item => item.id === productId);
@@ -195,12 +212,11 @@
                 } else if (action === 'decrement') {
                     cart[itemIndex].quantity--;
                     if (cart[itemIndex].quantity <= 0) {
-                        cart.splice(itemIndex, 1); // Remove item if quantity is 0 or less
+                        cart.splice(itemIndex, 1);
                     }
                 }
                 renderCart();
             };
-
 
             /**
              * Renders the cart items and updates the total.
@@ -255,6 +271,11 @@
             };
             
             // Event Listeners
+            searchBar.addEventListener('input', (e) => {
+                searchQuery = e.target.value.toLowerCase();
+                renderProducts();
+            });
+
             cartItemsContainer.addEventListener('click', (event) => {
                 const target = event.target;
                 const productId = parseInt(target.dataset.id);
