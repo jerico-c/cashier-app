@@ -71,7 +71,7 @@ This application was built as a solid foundation. Here are some features that co
 
 * [x] **Quantity Controls:** Add `+` and `-` buttons next to each cart item to adjust the quantity or remove it.
 * [x] **Product Categories:** Group products into categories (e.g., "Hot Drinks", "Pastries") for better organization.
-* **Search and Filter:** Implement a search bar to quickly find products.
+* []**Search and Filter:** Implement a search bar to quickly find products.
 * **Tax & Discounts:** Add functionality to apply taxes or promotional discounts to the total.
 * **Local Storage:** Save the current order so it isn't lost if the page is accidentally refreshed.
 * **Receipt Printing:** Generate a clean, printable receipt of the transaction.
