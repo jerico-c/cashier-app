@@ -65,12 +65,28 @@
                     <!-- Cart items will be injected here -->
                      <p id="empty-cart-message" class="text-gray-500 pt-4 text-center">Your cart is empty.</p>
                 </div>
-                <div class="mt-6 border-t pt-4">
-                    <div class="flex justify-between items-center text-xl font-bold">
+                <div class="mt-6 border-t pt-4 space-y-2 text-gray-700">
+                    <div class="flex justify-between">
+                        <span>Subtotal:</span>
+                        <span id="cart-subtotal">Rp 0</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span>Tax (11%):</span>
+                        <span id="cart-tax">Rp 0</span>
+                    </div>
+                    <div class="flex justify-between text-green-600 font-medium">
+                        <span>Discount:</span>
+                        <span id="cart-discount">- Rp 0</span>
+                    </div>
+                    <div class="flex justify-between items-center text-xl font-bold border-t pt-2 mt-2 text-gray-900">
                         <span>Total:</span>
                         <span id="cart-total">Rp 0</span>
                     </div>
-                    <button id="pay-button" class="w-full bg-indigo-600 text-white py-3 mt-4 rounded-lg font-semibold text-lg hover:bg-indigo-700 focus:outline-none focus:ring-4 focus:ring-indigo-300 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors duration-300">
+                     <div class="flex gap-2 pt-2">
+                        <input type="number" id="discount-input" placeholder="Enter discount (Rp)" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500" min="0">
+                        <button id="apply-discount-btn" class="bg-gray-200 px-4 py-2 rounded-lg font-semibold hover:bg-gray-300 transition-colors">Apply</button>
+                    </div>
+                    <button id="pay-button" class="w-full bg-indigo-600 text-white py-3 mt-2 rounded-lg font-semibold text-lg hover:bg-indigo-700 focus:outline-none focus:ring-4 focus:ring-indigo-300 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors duration-300">
                         Process Payment
                     </button>
                 </div>
@@ -106,12 +122,18 @@
                 { id: 8, name: 'Iced Tea', price: 15000, category: 'Cold Drinks' },
             ];
 
+            const TAX_RATE = 0.11; // 11% PPN
             let cart = [];
             let activeCategory = 'All';
             let searchQuery = '';
+            let discount = 0;
 
+            // Element selectors
             const productList = document.getElementById('product-list');
             const cartItemsContainer = document.getElementById('cart-items');
+            const cartSubtotalElement = document.getElementById('cart-subtotal');
+            const cartTaxElement = document.getElementById('cart-tax');
+            const cartDiscountElement = document.getElementById('cart-discount');
             const cartTotalElement = document.getElementById('cart-total');
             const payButton = document.getElementById('pay-button');
             const emptyCartMessage = document.getElementById('empty-cart-message');
@@ -119,7 +141,9 @@
             const closeModalButton = document.getElementById('close-modal-button');
             const categoryFiltersContainer = document.getElementById('category-filters');
             const searchBar = document.getElementById('search-bar');
-
+            const discountInput = document.getElementById('discount-input');
+            const applyDiscountBtn = document.getElementById('apply-discount-btn');
+            
             /**
              * Formats a number into Indonesian Rupiah currency format.
              */
@@ -142,9 +166,7 @@
                     const button = document.createElement('button');
                     button.textContent = category;
                     button.className = `category-btn px-4 py-2 rounded-lg font-medium transition-colors duration-200 bg-white shadow-sm hover:bg-gray-200`;
-                    if (category === activeCategory) {
-                        button.classList.add('active');
-                    }
+                    if (category === activeCategory) button.classList.add('active');
                     button.addEventListener('click', () => {
                         activeCategory = category;
                         renderProducts();
@@ -158,30 +180,24 @@
              * Renders the list of available products based on active category and search query.
              */
             const renderProducts = () => {
-                productList.innerHTML = '';
-                
                 let filteredProducts = activeCategory === 'All' 
                     ? products 
                     : products.filter(p => p.category === activeCategory);
 
                 if (searchQuery) {
-                    filteredProducts = filteredProducts.filter(p => 
-                        p.name.toLowerCase().includes(searchQuery)
-                    );
+                    filteredProducts = filteredProducts.filter(p => p.name.toLowerCase().includes(searchQuery));
                 }
-
+                
+                productList.innerHTML = '';
                 if (filteredProducts.length === 0) {
-                    productList.innerHTML = `<p class="col-span-full text-center text-gray-500 py-8">No products found matching your criteria.</p>`;
+                    productList.innerHTML = `<p class="col-span-full text-center text-gray-500 py-8">No products found.</p>`;
                     return;
                 }
 
                 filteredProducts.forEach(product => {
                     const productElement = document.createElement('div');
                     productElement.className = 'product-card bg-white p-4 rounded-lg shadow-md cursor-pointer flex flex-col justify-between';
-                    productElement.innerHTML = `
-                        <h3 class="font-semibold text-lg">${product.name}</h3>
-                        <p class="text-gray-600">${formatCurrency(product.price)}</p>
-                    `;
+                    productElement.innerHTML = `<h3 class="font-semibold text-lg">${product.name}</h3> <p class="text-gray-600">${formatCurrency(product.price)}</p>`;
                     productElement.addEventListener('click', () => addToCart(product));
                     productList.appendChild(productElement);
                 });
@@ -211,9 +227,7 @@
                     cart[itemIndex].quantity++;
                 } else if (action === 'decrement') {
                     cart[itemIndex].quantity--;
-                    if (cart[itemIndex].quantity <= 0) {
-                        cart.splice(itemIndex, 1);
-                    }
+                    if (cart[itemIndex].quantity <= 0) cart.splice(itemIndex, 1);
                 }
                 renderCart();
             };
@@ -223,7 +237,6 @@
              */
             const renderCart = () => {
                 cartItemsContainer.innerHTML = '';
-
                 if (cart.length === 0) {
                     cartItemsContainer.appendChild(emptyCartMessage);
                     emptyCartMessage.classList.remove('hidden');
@@ -251,21 +264,30 @@
             };
 
             /**
-             * Calculates and updates the total price of the cart.
+             * Calculates and updates the complete order summary including subtotal, tax, discount, and total.
              */
             const updateTotal = () => {
-                const total = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-                cartTotalElement.textContent = formatCurrency(total);
+                const subtotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+                const tax = subtotal * TAX_RATE;
+                const total = subtotal + tax - discount;
+
+                cartSubtotalElement.textContent = formatCurrency(subtotal);
+                cartTaxElement.textContent = formatCurrency(tax);
+                cartDiscountElement.textContent = `- ${formatCurrency(discount)}`;
+                cartTotalElement.textContent = formatCurrency(total > 0 ? total : 0);
+
                 payButton.disabled = cart.length === 0;
             };
             
             /**
-             * Handles the payment process.
+             * Handles the payment process, clearing the cart and resetting the state.
              */
             const processPayment = () => {
                 if (cart.length > 0) {
                     successModal.classList.remove('hidden');
                     cart = [];
+                    discount = 0;
+                    discountInput.value = '';
                     renderCart();
                 }
             };
@@ -276,21 +298,27 @@
                 renderProducts();
             });
 
-            cartItemsContainer.addEventListener('click', (event) => {
-                const target = event.target;
-                const productId = parseInt(target.dataset.id);
-
-                if (target.classList.contains('increment-btn')) {
-                    handleQuantityChange(productId, 'increment');
-                } else if (target.classList.contains('decrement-btn')) {
-                    handleQuantityChange(productId, 'decrement');
+            applyDiscountBtn.addEventListener('click', () => {
+                const discountValue = parseFloat(discountInput.value);
+                if (!isNaN(discountValue) && discountValue >= 0) {
+                    discount = discountValue;
+                    updateTotal();
+                } else {
+                    // If input is invalid, reset discount to 0
+                    discount = 0;
+                    updateTotal();
                 }
             });
 
-            payButton.addEventListener('click', processPayment);
-            closeModalButton.addEventListener('click', () => {
-                successModal.classList.add('hidden');
+            cartItemsContainer.addEventListener('click', (event) => {
+                const target = event.target;
+                const productId = parseInt(target.dataset.id);
+                if (target.classList.contains('increment-btn')) handleQuantityChange(productId, 'increment');
+                if (target.classList.contains('decrement-btn')) handleQuantityChange(productId, 'decrement');
             });
+
+            payButton.addEventListener('click', processPayment);
+            closeModalButton.addEventListener('click', () => successModal.classList.add('hidden'));
 
             // Initial render
             renderCategories();
