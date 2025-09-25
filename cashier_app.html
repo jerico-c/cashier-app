@@ -101,9 +101,14 @@
                 </svg>
                 <h3 class="text-2xl font-bold mt-4">Payment Successful!</h3>
                 <p class="text-gray-600 mt-2">New order started.</p>
-                <button id="close-modal-button" class="mt-6 bg-indigo-600 text-white px-6 py-2 rounded-lg hover:bg-indigo-700">
-                    OK
-                </button>
+                <div class="flex gap-4 mt-6">
+                    <button id="print-receipt-btn" class="w-full bg-gray-600 text-white px-6 py-2 rounded-lg hover:bg-gray-700">
+                        Print Receipt
+                    </button>
+                    <button id="close-modal-button" class="w-full bg-indigo-600 text-white px-6 py-2 rounded-lg hover:bg-indigo-700">
+                        OK
+                    </button>
+                </div>
             </div>
         </div>
 
@@ -127,6 +132,7 @@
             let activeCategory = 'All';
             let searchQuery = '';
             let discount = 0;
+            let lastOrder = {}; // To store the details of the last transaction for receipt printing
 
             // Element selectors
             const productList = document.getElementById('product-list');
@@ -139,6 +145,7 @@
             const emptyCartMessage = document.getElementById('empty-cart-message');
             const successModal = document.getElementById('success-modal');
             const closeModalButton = document.getElementById('close-modal-button');
+            const printReceiptBtn = document.getElementById('print-receipt-btn');
             const categoryFiltersContainer = document.getElementById('category-filters');
             const searchBar = document.getElementById('search-bar');
             const discountInput = document.getElementById('discount-input');
@@ -158,12 +165,10 @@
             const loadState = () => {
                 const savedCart = localStorage.getItem('cashierCart');
                 const savedDiscount = localStorage.getItem('cashierDiscount');
-                if (savedCart) {
-                    cart = JSON.parse(savedCart);
-                }
+                if (savedCart) cart = JSON.parse(savedCart);
                 if (savedDiscount) {
                     discount = parseFloat(savedDiscount);
-                    discountInput.value = discount;
+                    if(discount > 0) discountInput.value = discount;
                 }
             };
 
@@ -179,9 +184,6 @@
                 }).format(number);
             };
             
-            /**
-             * Renders the category filter buttons.
-             */
             const renderCategories = () => {
                 const categories = ['All', ...new Set(products.map(p => p.category))];
                 categoryFiltersContainer.innerHTML = '';
@@ -198,15 +200,11 @@
                     categoryFiltersContainer.appendChild(button);
                 });
             };
-
-            /**
-             * Renders the list of available products based on active category and search query.
-             */
+            
             const renderProducts = () => {
                 let filteredProducts = activeCategory === 'All' 
                     ? products 
                     : products.filter(p => p.category === activeCategory);
-
                 if (searchQuery) {
                     filteredProducts = filteredProducts.filter(p => p.name.toLowerCase().includes(searchQuery));
                 }
@@ -226,38 +224,25 @@
                 });
             };
 
-            /**
-             * Adds a product to the cart or increments its quantity.
-             */
             const addToCart = (product) => {
                 const existingItem = cart.find(item => item.id === product.id);
-                if (existingItem) {
-                    existingItem.quantity++;
-                } else {
-                    cart.push({ ...product, quantity: 1 });
-                }
+                if (existingItem) existingItem.quantity++;
+                else cart.push({ ...product, quantity: 1 });
                 renderCart();
             };
             
-            /**
-             * Handles changes to item quantity in the cart.
-             */
             const handleQuantityChange = (productId, action) => {
                 const itemIndex = cart.findIndex(item => item.id === productId);
                 if (itemIndex === -1) return;
 
-                if (action === 'increment') {
-                    cart[itemIndex].quantity++;
-                } else if (action === 'decrement') {
+                if (action === 'increment') cart[itemIndex].quantity++;
+                else if (action === 'decrement') {
                     cart[itemIndex].quantity--;
                     if (cart[itemIndex].quantity <= 0) cart.splice(itemIndex, 1);
                 }
                 renderCart();
             };
 
-            /**
-             * Renders the cart items and updates the total.
-             */
             const renderCart = () => {
                 cartItemsContainer.innerHTML = '';
                 if (cart.length === 0) {
@@ -285,35 +270,102 @@
                 }
                 updateTotal();
             };
-
-            /**
-             * Calculates and updates the complete order summary and saves state.
-             */
+            
             const updateTotal = () => {
                 const subtotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
                 const tax = subtotal * TAX_RATE;
                 const total = subtotal + tax - discount;
-
+                
                 cartSubtotalElement.textContent = formatCurrency(subtotal);
                 cartTaxElement.textContent = formatCurrency(tax);
                 cartDiscountElement.textContent = `- ${formatCurrency(discount)}`;
                 cartTotalElement.textContent = formatCurrency(total > 0 ? total : 0);
-
+                
                 payButton.disabled = cart.length === 0;
-                saveState(); // Save state every time total is updated
+                saveState();
             };
             
-            /**
-             * Handles the payment process, clearing the cart and resetting the state.
-             */
             const processPayment = () => {
                 if (cart.length > 0) {
+                    const subtotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+                    const tax = subtotal * TAX_RATE;
+                    const total = subtotal + tax - discount;
+
+                    lastOrder = {
+                        items: [...cart],
+                        subtotal,
+                        tax,
+                        discount,
+                        total,
+                        date: new Date()
+                    };
+                    
                     successModal.classList.remove('hidden');
                     cart = [];
                     discount = 0;
                     discountInput.value = '';
-                    renderCart(); // This will also trigger updateTotal and save the cleared state
+                    renderCart();
                 }
+            };
+
+            const printReceipt = () => {
+                if (!lastOrder.items) return;
+
+                const receiptItems = lastOrder.items.map(item => `
+                    <tr>
+                        <td>${item.name} (x${item.quantity})</td>
+                        <td style="text-align: right;">${formatCurrency(item.price * item.quantity)}</td>
+                    </tr>
+                `).join('');
+
+                const receiptContent = `
+                    <html>
+                        <head>
+                            <title>Receipt</title>
+                            <style>
+                                body { font-family: 'Courier New', monospace; margin: 0; padding: 20px; color: #000; }
+                                .receipt { width: 300px; margin: auto; }
+                                h2, p { text-align: center; margin: 5px 0; }
+                                table { width: 100%; border-collapse: collapse; }
+                                th, td { padding: 5px; }
+                                .summary-table td:first-child { text-align: left; }
+                                .summary-table td:last-child { text-align: right; }
+                                .divider { border-top: 1px dashed #000; margin: 10px 0; }
+                            </style>
+                        </head>
+                        <body>
+                            <div class="receipt">
+                                <h2>CashierPro Lite</h2>
+                                <p>Jl. Pahlawan No. 123</p>
+                                <p>Mertoyudan, Central Java</p>
+                                <div class="divider"></div>
+                                <p>${lastOrder.date.toLocaleString('id-ID')}</p>
+                                <div class="divider"></div>
+                                <table>
+                                    <tbody>
+                                        ${receiptItems}
+                                    </tbody>
+                                </table>
+                                <div class="divider"></div>
+                                <table class="summary-table">
+                                     <tr><td>Subtotal:</td><td>${formatCurrency(lastOrder.subtotal)}</td></tr>
+                                     <tr><td>Tax (11%):</td><td>${formatCurrency(lastOrder.tax)}</td></tr>
+                                     <tr><td>Discount:</td><td>- ${formatCurrency(lastOrder.discount)}</td></tr>
+                                     <tr><td><strong>Total:</strong></td><td><strong>${formatCurrency(lastOrder.total)}</strong></td></tr>
+                                </table>
+                                <div class="divider"></div>
+                                <p>Thank you for your purchase!</p>
+                            </div>
+                        </body>
+                    </html>
+                `;
+
+                const printWindow = window.open('', '_blank');
+                printWindow.document.write(receiptContent);
+                printWindow.document.close();
+                printWindow.focus();
+                printWindow.print();
+                printWindow.close();
             };
             
             // Event Listeners
@@ -324,12 +376,8 @@
 
             applyDiscountBtn.addEventListener('click', () => {
                 const discountValue = parseFloat(discountInput.value);
-                if (!isNaN(discountValue) && discountValue >= 0) {
-                    discount = discountValue;
-                } else {
-                    discount = 0;
-                    discountInput.value = ''; // Clear invalid input
-                }
+                discount = (!isNaN(discountValue) && discountValue >= 0) ? discountValue : 0;
+                if(discount === 0) discountInput.value = '';
                 updateTotal();
             });
 
@@ -341,13 +389,14 @@
             });
 
             payButton.addEventListener('click', processPayment);
+            printReceiptBtn.addEventListener('click', printReceipt);
             closeModalButton.addEventListener('click', () => successModal.classList.add('hidden'));
 
             // Initial setup
-            loadState(); // Load saved state on page load
+            loadState();
             renderCategories();
             renderProducts();
-            renderCart(); // Render based on loaded state
+            renderCart();
         });
     </script>
 </body>
