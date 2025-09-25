@@ -74,7 +74,7 @@ This application was built as a solid foundation. Here are some features that co
 * [x] **Search and Filter:** Implement a search bar to quickly find products.
 * [x] **Tax & Discounts:** Add functionality to apply taxes or promotional discounts to the total.
 * [x] **Local Storage:** Save the current order so it isn't lost if the page is accidentally refreshed.
-* **Receipt Printing:** Generate a clean, printable receipt of the transaction.
+* []**Receipt Printing:** Generate a clean, printable receipt of the transaction.
 * **File Separation:** Split the code into separate `.html`, `.css`, and `.js` files for better project management.
 
 ## 💻 Technologies Used
