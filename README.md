@@ -22,7 +22,7 @@ Built with vanilla HTML, JavaScript, and styled with Tailwind CSS, this applicat
 Getting started is as simple as it gets:
 
 1.  Download the file.
-2.  Open the file in any modern web browser like Google Chrome, Firefox, or Safari.
+2.  Open the file html in any modern web browser like Google Chrome, Firefox, or Safari.
 3.  That's it! You can start adding items to the cart.
 
 ## 🔧 How to Customize
