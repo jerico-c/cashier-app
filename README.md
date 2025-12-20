@@ -28,12 +28,9 @@ Getting started is as simple as it gets:
 📂 Project Structure
 
 The project is organized into a standard web development structure, separating structure, style, and logic:
-
-index.html: The main entry point of the application. It contains the HTML markup and links to the CSS and JavaScript files.
-
-style.css: Contains all custom styling, including Tailwind CSS overrides and specific component styles.
-
-script.js: Handles all the application logic, including product data, cart management, and local storage operations.
+1. index.html: The main entry point of the application. It contains the HTML markup and links to the CSS and JavaScript files.
+2. style.css: Contains all custom styling, including Tailwind CSS overrides and specific component styles.
+3. script.js: Handles all the application logic, including product data, cart management, and local storage operations.
 
 
 
