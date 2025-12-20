@@ -25,6 +25,18 @@ Getting started is as simple as it gets:
 2.  Open the file html in any modern web browser like Google Chrome, Firefox, or Safari.
 3.  That's it! You can start adding items to the cart.
 
+📂 Project Structure
+
+The project is organized into a standard web development structure, separating structure, style, and logic:
+
+index.html: The main entry point of the application. It contains the HTML markup and links to the CSS and JavaScript files.
+
+style.css: Contains all custom styling, including Tailwind CSS overrides and specific component styles.
+
+script.js: Handles all the application logic, including product data, cart management, and local storage operations.
+
+
+
 ## 🔧 How to Customize
 
 You can easily tailor this application to your needs by editing the `cashier_app.html` file.
